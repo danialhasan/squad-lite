@@ -108,7 +108,7 @@ squad-lite/
 ## Team
 
 - **Danial** — [@danialhasan](https://github.com/danialhasan)
-- **Shafan** — [@shafan](https://github.com/shafan)
+- **Shafan** — [@shafan](https://github.com/shafan9)
 
 ## Links
 
