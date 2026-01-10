@@ -13,6 +13,9 @@ const AgentResponse = z.object({
   status: z.enum(['idle', 'working', 'waiting', 'completed', 'error']),
   sandboxId: z.string().nullable(),
   sandboxStatus: z.enum(['none', 'active', 'paused', 'killed']),
+  specialization: z.enum(['researcher', 'writer', 'analyst', 'general']).optional(),
+  parentId: z.string().uuid().nullable().optional(),
+  taskId: z.string().uuid().nullable().optional(),
   createdAt: z.string(), // ISO timestamp
   lastHeartbeat: z.string(),
 })
@@ -21,6 +24,11 @@ const SandboxResponse = z.object({
   sandboxId: z.string(),
   agentId: z.string().uuid(),
   status: z.enum(['creating', 'active', 'paused', 'resuming', 'killed']),
+  metadata: z.object({
+    agentType: z.enum(['director', 'specialist']),
+    specialization: z.enum(['researcher', 'writer', 'analyst', 'general']).optional(),
+    createdBy: z.string().optional(),
+  }),
   lifecycle: z.object({
     createdAt: z.string(),
     pausedAt: z.string().nullable(),

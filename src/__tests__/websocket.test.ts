@@ -145,7 +145,7 @@ describe('WebSocket Handler', () => {
       })
 
       const parsed = JSON.parse(message)
-      expect(parsed.event).toBe('agent:created')
+      expect(parsed.type).toBe('agent:created') // Changed from 'event' to 'type' for frontend compatibility
       expect(parsed.data.agentId).toBe('agent-123')
       expect(parsed.timestamp).toBeDefined()
     })

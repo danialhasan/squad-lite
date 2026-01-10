@@ -20,9 +20,10 @@ export type EventType =
 
 /**
  * WebSocket message structure
+ * Note: Uses 'type' instead of 'event' to match frontend expectations
  */
 export type WebSocketMessage = {
-  event: EventType | 'error' | 'unknown'
+  type: EventType | 'error' | 'unknown'
   data: Record<string, unknown>
   timestamp: string
 }
@@ -114,7 +115,7 @@ export const formatWebSocketMessage = (
   data: Record<string, unknown>
 ): string => {
   const message: WebSocketMessage = {
-    event,
+    type: event, // Changed from 'event' to 'type' to match frontend expectations
     data,
     timestamp: new Date().toISOString(),
   }
