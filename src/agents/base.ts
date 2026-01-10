@@ -29,6 +29,8 @@ export const registerAgent = async (config: AgentConfig): Promise<Agent> => {
     type: config.type,
     specialization: config.specialization,
     status: 'idle',
+    sandboxId: null,
+    sandboxStatus: 'none',
     parentId: config.parentId || null,
     taskId: null,
     createdAt: new Date(),

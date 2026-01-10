@@ -56,14 +56,48 @@ cd web && pnpm dev   # Frontend
 6. Task completes successfully
 ```
 
+## Session Directory (Important!)
+
+Session artifacts are organized by developer to prevent context pollution:
+
+```
+docs/sessions/YYYY-MM-DD/
+├── danial/           # Danial's session artifacts
+│   ├── MISSION.md
+│   ├── NOTES.md
+│   └── artifacts/
+└── shafan/           # Shafan's session artifacts
+    ├── MISSION.md
+    ├── NOTES.md
+    └── artifacts/
+```
+
+**Rules:**
+- Danial writes to `danial/` only, can read both folders
+- Shafan writes to `shafan/` only, can read both folders
+- Prevents context contamination between developers
+- See `docs/sessions/README.md` for full guide
+
 ## Project Structure
 
 ```
 squad-lite/
-├── docs/specs/
-│   ├── web/           # Primary: E2B + Vue + Fastify
-│   └── cli/           # Fallback: Local + CLI
+├── docs/
+│   ├── specs/
+│   │   ├── web/           # Primary: E2B + Vue + Fastify
+│   │   │   ├── SPEC.md
+│   │   │   ├── DEP-GRAPH.md
+│   │   │   ├── DEP-GRAPH-BACKEND.md   # Auto-verifiable
+│   │   │   └── DEP-GRAPH-FRONTEND.md  # Human-verifiable
+│   │   └── cli/           # Fallback: Local + CLI
+│   │       ├── SPEC.md
+│   │       └── DEP-GRAPH.md
+│   └── sessions/          # Per-developer session artifacts
+│       └── YYYY-MM-DD/
+│           ├── danial/
+│           └── shafan/
 ├── src/
+│   ├── contracts/     # Frozen contracts (ts-rest + Zod)
 │   ├── agents/        # Director + Specialist
 │   ├── coordination/  # Messages, Checkpoints, Tasks
 │   ├── sandbox/       # E2B integration

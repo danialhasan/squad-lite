@@ -152,6 +152,32 @@ cd web && pnpm run dev
 
 ---
 
+## Session Directory Usage
+
+**IMPORTANT:** Session artifacts are split by developer to prevent context pollution.
+
+```
+docs/sessions/
+└── YYYY-MM-DD/
+    ├── danial/           # Danial's artifacts only
+    │   ├── MISSION.md
+    │   ├── NOTES.md
+    │   └── artifacts/
+    │
+    └── shafan/           # Shafan's artifacts only
+        ├── MISSION.md
+        ├── NOTES.md
+        └── artifacts/
+```
+
+**Rules:**
+- **Danial:** Write only to `danial/`, can read from both
+- **Shafan:** Write only to `shafan/`, can read from both
+- **Benefit:** Clean context per developer, no cross-pollution
+- **See:** `docs/sessions/README.md` for full guide
+
+---
+
 ## Project Structure
 
 ```
@@ -166,11 +192,18 @@ squad-lite/
 │   ├── specs/
 │   │   ├── web/                 # ← PRIMARY SPEC
 │   │   │   ├── SPEC.md
-│   │   │   └── DEP-GRAPH.md
+│   │   │   ├── DEP-GRAPH.md
+│   │   │   ├── DEP-GRAPH-BACKEND.md
+│   │   │   └── DEP-GRAPH-FRONTEND.md
 │   │   └── cli/                 # ← FALLBACK SPEC
 │   │       ├── SPEC.md
 │   │       └── DEP-GRAPH.md
-│   └── research/                # E2B, SDK research artifacts
+│   ├── research/                # E2B, SDK research artifacts
+│   └── sessions/                # Per-developer session artifacts
+│       ├── README.md            # Session structure guide
+│       └── YYYY-MM-DD/
+│           ├── danial/
+│           └── shafan/
 │
 ├── .claude/
 │   └── skills/                  # Behavior contract skills (7 skills)

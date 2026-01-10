@@ -10,8 +10,14 @@ export const AgentSchema = z.object({
   type: z.enum(['director', 'specialist']),
   specialization: z.enum(['researcher', 'writer', 'analyst', 'general']).optional(),
   status: z.enum(['idle', 'working', 'waiting', 'completed', 'error']),
+
+  // E2B sandbox tracking
+  sandboxId: z.string().nullable(),
+  sandboxStatus: z.enum(['none', 'active', 'paused', 'killed']).default('none'),
+
   parentId: z.string().uuid().nullable(),
   taskId: z.string().uuid().nullable(),
+  sessionId: z.string().optional(),     // Claude SDK session ID
   createdAt: z.date(),
   lastHeartbeat: z.date(),
 })
@@ -58,11 +64,45 @@ export const TaskSchema = z.object({
   updatedAt: z.date(),
 })
 
+export const SandboxTrackingSchema = z.object({
+  sandboxId: z.string(),           // E2B sandbox ID (not UUID format)
+  agentId: z.string().uuid(),      // Squad agent ID
+  squadId: z.string().uuid().optional(),
+  taskId: z.string().uuid().nullable(),
+  status: z.enum(['creating', 'active', 'paused', 'resuming', 'killed']),
+
+  metadata: z.object({
+    agentType: z.enum(['director', 'specialist']),
+    specialization: z.enum(['researcher', 'writer', 'analyst', 'general']).optional(),
+    createdBy: z.string().uuid().optional(),
+  }),
+
+  lifecycle: z.object({
+    createdAt: z.date(),
+    pausedAt: z.date().nullable(),
+    resumedAt: z.date().nullable(),
+    killedAt: z.date().nullable(),
+    lastHeartbeat: z.date(),
+  }),
+
+  resources: z.object({
+    cpuCount: z.number().int().positive().default(2),
+    memoryMB: z.number().int().positive().default(512),
+    timeoutMs: z.number().int().positive().default(600000), // 10 minutes
+  }),
+
+  costs: z.object({
+    estimatedCost: z.number().nonnegative().default(0),    // USD
+    runtimeSeconds: z.number().int().nonnegative().default(0),
+  }),
+})
+
 // Types derived from schemas
 export type Agent = z.infer<typeof AgentSchema>
 export type Message = z.infer<typeof MessageSchema>
 export type Checkpoint = z.infer<typeof CheckpointSchema>
 export type Task = z.infer<typeof TaskSchema>
+export type SandboxTracking = z.infer<typeof SandboxTrackingSchema>
 
 // ============================================================
 // DATABASE CONNECTION
@@ -122,6 +162,11 @@ export const getTasksCollection = async (): Promise<Collection<Task>> => {
   return database.collection<Task>('tasks')
 }
 
+export const getSandboxTrackingCollection = async (): Promise<Collection<SandboxTracking>> => {
+  const database = await connectToMongo()
+  return database.collection<SandboxTracking>('sandbox_tracking')
+}
+
 // ============================================================
 // INDEXES (Run once on startup)
 // ============================================================
@@ -131,19 +176,31 @@ export const ensureIndexes = async (): Promise<void> => {
   const messages = await getMessagesCollection()
   const checkpoints = await getCheckpointsCollection()
   const tasks = await getTasksCollection()
+  const sandboxTracking = await getSandboxTrackingCollection()
 
+  // Agent indexes
   await agents.createIndex({ agentId: 1 }, { unique: true })
   await agents.createIndex({ status: 1, lastHeartbeat: -1 })
+  await agents.createIndex({ sandboxId: 1 })
 
+  // Message indexes
   await messages.createIndex({ messageId: 1 }, { unique: true })
   await messages.createIndex({ toAgent: 1, readAt: 1, createdAt: -1 })
   await messages.createIndex({ threadId: 1, createdAt: 1 })
 
+  // Checkpoint indexes
   await checkpoints.createIndex({ checkpointId: 1 }, { unique: true })
   await checkpoints.createIndex({ agentId: 1, createdAt: -1 })
 
+  // Task indexes
   await tasks.createIndex({ taskId: 1 }, { unique: true })
   await tasks.createIndex({ assignedTo: 1, status: 1 })
+
+  // Sandbox tracking indexes
+  await sandboxTracking.createIndex({ sandboxId: 1 }, { unique: true })
+  await sandboxTracking.createIndex({ agentId: 1 })
+  await sandboxTracking.createIndex({ status: 1, 'lifecycle.lastHeartbeat': -1 })
+  await sandboxTracking.createIndex({ 'lifecycle.createdAt': -1 })
 
   console.log('[MongoDB] Indexes ensured')
 }
