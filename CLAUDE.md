@@ -145,9 +145,18 @@ mongosh --eval "db.messages.watch()"
 
 ---
 
+## Project Management
+
+- **Linear Team:** `HACK`
+- **Spec:** `docs/SPEC.md` — Exhaustive system spec with dependency graph
+- **Tickets:** Created from spec, assigned in Linear
+
+---
+
 ## Links
 
-- **Linear:** [Hackathon Project Board]
+- **Linear:** https://linear.app/trysquad/team/HACK
+- **GitHub:** https://github.com/danialhasan/squad-lite
 - **MongoDB Atlas:** [Cluster Dashboard]
 - **Hackathon Page:** https://cerebralvalley.ai/e/agentic-orchestration-hackathon
 
