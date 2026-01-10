@@ -1,4 +1,5 @@
 import type { WsEvent } from '@/types'
+import { isMockMode, createMockWsClient } from './mock'
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001/ws'
 
@@ -9,7 +10,7 @@ export type WsClientOptions = {
   onError?: (error: Event) => void
 }
 
-export const createWsClient = (options: WsClientOptions) => {
+const createRealWsClient = (options: WsClientOptions) => {
   let ws: WebSocket | null = null
   let reconnectAttempts = 0
   const maxReconnectAttempts = 5
@@ -69,4 +70,13 @@ export const createWsClient = (options: WsClientOptions) => {
     disconnect,
     send,
   }
+}
+
+// Export the appropriate client based on mock mode
+export const createWsClient = (options: WsClientOptions) => {
+  if (isMockMode()) {
+    console.log('[WS] Using mock WebSocket client')
+    return createMockWsClient(options)
+  }
+  return createRealWsClient(options)
 }

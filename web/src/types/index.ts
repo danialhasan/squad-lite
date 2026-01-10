@@ -1,27 +1,108 @@
 // ============================================================
-// FRONTEND TYPES (derived from backend contracts)
-// These are manually synced from src/contracts/*.ts
+// FRONTEND TYPES (aligned with backend contracts)
+// Source: src/db/mongo.ts + docs/specs/web/SPEC.md
 // ============================================================
 
-// Agent types
+// ============================================================
+// CORE ENUMS (from backend Zod schemas)
+// ============================================================
+
 export type AgentStatus = 'idle' | 'working' | 'waiting' | 'completed' | 'error'
 export type AgentType = 'director' | 'specialist'
+export type Specialization = 'researcher' | 'writer' | 'analyst' | 'general'
 export type SandboxStatus = 'none' | 'active' | 'paused' | 'killed'
+export type MessageType = 'task' | 'result' | 'status' | 'error'
+export type MessagePriority = 'high' | 'normal' | 'low'
+export type TaskStatus = 'pending' | 'assigned' | 'in_progress' | 'completed' | 'failed'
+
+// ============================================================
+// AGENT TYPES (from AgentSchema)
+// ============================================================
 
 export interface AgentResponse {
   agentId: string
   type: AgentType
+  specialization?: Specialization
   status: AgentStatus
   sandboxId: string | null
   sandboxStatus: SandboxStatus
+  parentId?: string | null
+  taskId?: string | null
   createdAt: string
   lastHeartbeat: string
 }
+
+// ============================================================
+// MESSAGE TYPES (from MessageSchema)
+// ============================================================
+
+export interface Message {
+  messageId: string
+  fromAgent: string
+  toAgent: string
+  content: string
+  type: MessageType
+  threadId: string
+  priority: MessagePriority
+  readAt: string | null
+  createdAt: string
+}
+
+// ============================================================
+// CHECKPOINT TYPES (from CheckpointSchema)
+// ============================================================
+
+export interface CheckpointSummary {
+  goal: string
+  completed: string[]
+  pending: string[]
+  decisions: string[]
+}
+
+export interface ResumePointer {
+  nextAction: string
+  currentContext?: string
+  phase: string
+}
+
+export interface Checkpoint {
+  checkpointId: string
+  agentId: string
+  summary: CheckpointSummary
+  resumePointer: ResumePointer
+  tokensUsed: number
+  createdAt: string
+}
+
+// ============================================================
+// TASK TYPES (from TaskSchema)
+// ============================================================
+
+export interface Task {
+  taskId: string
+  parentTaskId: string | null
+  assignedTo: string | null
+  title: string
+  description: string
+  status: TaskStatus
+  result: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// ============================================================
+// SANDBOX TYPES (from SandboxTrackingSchema)
+// ============================================================
 
 export interface SandboxResponse {
   sandboxId: string
   agentId: string
   status: 'creating' | 'active' | 'paused' | 'resuming' | 'killed'
+  metadata: {
+    agentType: AgentType
+    specialization?: Specialization
+    createdBy?: string
+  }
   lifecycle: {
     createdAt: string
     pausedAt: string | null
@@ -40,10 +121,20 @@ export interface SandboxResponse {
   }
 }
 
+// ============================================================
+// API RESPONSE TYPES (from SPEC.md)
+// ============================================================
+
 export interface ErrorResponse {
   error: string
   message: string
   statusCode: number
+}
+
+export interface SpawnResponse {
+  agentId: string
+  sandboxId: string
+  status: AgentStatus
 }
 
 export interface TaskSubmitResponse {
@@ -58,8 +149,14 @@ export interface KillResponse {
   checkpointId: string | null
 }
 
+export interface RestartResponse {
+  agentId: string
+  status: AgentStatus
+  resumedFrom: string | null
+}
+
 // ============================================================
-// WEBSOCKET EVENT TYPES
+// WEBSOCKET EVENT TYPES (from SPEC.md)
 // ============================================================
 
 export interface WsAgentCreatedEvent {
@@ -67,6 +164,7 @@ export interface WsAgentCreatedEvent {
   data: {
     agentId: string
     agentType: AgentType
+    specialization?: Specialization
     sandboxId: string | null
   }
 }
@@ -77,6 +175,7 @@ export interface WsAgentStatusEvent {
     agentId: string
     status: AgentStatus
     sandboxStatus: SandboxStatus
+    taskId?: string | null
   }
 }
 
@@ -96,8 +195,11 @@ export interface WsMessageNewEvent {
     messageId: string
     fromAgent: string
     toAgent: string
-    messageType: 'task' | 'result' | 'status' | 'error'
-    preview: string
+    messageType: MessageType
+    content: string
+    threadId: string
+    priority: MessagePriority
+    preview: string // Truncated content for UI display
   }
 }
 
@@ -107,6 +209,7 @@ export interface WsCheckpointNewEvent {
     checkpointId: string
     agentId: string
     phase: string
+    summary: CheckpointSummary
     timestamp: string
   }
 }
@@ -115,6 +218,7 @@ export interface WsSandboxEvent {
   type: 'sandbox:event'
   data: {
     sandboxId: string
+    agentId: string
     event: 'created' | 'paused' | 'resumed' | 'killed'
     timestamp: string
   }

@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { api } from '@/api/client'
 import { createWsClient } from '@/api/websocket'
+import { isMockMode, resetMockState } from '@/api/mock'
 import AgentCard from '@/components/AgentCard.vue'
 import MessageFeed from '@/components/MessageFeed.vue'
 import type { Message } from '@/components/MessageFeed.vue'
@@ -22,6 +23,7 @@ const checkpoints = ref<Checkpoint[]>([])
 const outputs = ref<OutputLine[]>([])
 const isConnected = ref(false)
 const error = ref<string | null>(null)
+const mockMode = isMockMode()
 
 // ============================================================
 // WEBSOCKET
@@ -169,6 +171,10 @@ const handleReset = () => {
   checkpoints.value = []
   outputs.value = []
   error.value = null
+  // Reset mock state if in mock mode
+  if (mockMode) {
+    resetMockState()
+  }
 }
 
 // ============================================================
@@ -198,6 +204,7 @@ onUnmounted(() => {
         <span :class="['connection-status', { connected: isConnected }]">
           {{ isConnected ? 'Connected' : 'Disconnected' }}
         </span>
+        <span v-if="mockMode" class="mock-badge">MOCK MODE</span>
       </div>
       <div class="header-right">
         <span class="tagline">MongoDB Agentic Orchestration</span>
@@ -310,6 +317,16 @@ body {
 
 .connection-status.connected {
   background: #a6e3a1;
+}
+
+.mock-badge {
+  font-size: 0.75em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #fab387;
+  color: #1e1e2e;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 .tagline {

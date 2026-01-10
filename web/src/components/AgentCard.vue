@@ -76,6 +76,10 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 
     <!-- Body -->
     <div class="card-body">
+      <div v-if="agent.specialization" class="stat-row">
+        <span class="label">Spec:</span>
+        <span class="value specialization">{{ agent.specialization }}</span>
+      </div>
       <div class="stat-row">
         <span class="label">Status:</span>
         <span class="value">{{ agent.status }}</span>
@@ -176,6 +180,11 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 .value {
   color: #cdd6f4;
   font-family: monospace;
+}
+
+.value.specialization {
+  color: #89b4fa;
+  text-transform: capitalize;
 }
 
 .card-actions {

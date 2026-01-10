@@ -4,14 +4,15 @@ import type {
   KillResponse,
   SandboxResponse,
 } from '@/types'
+import { isMockMode, mockApi } from './mock'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
 // ============================================================
-// API CLIENT (matches backend ts-rest contract)
+// REAL API CLIENT (matches backend ts-rest contract)
 // ============================================================
 
-export const api = {
+const realApi = {
   agents: {
     spawn: async (): Promise<AgentResponse> => {
       const res = await fetch(`${BASE_URL}/api/agents`, {
@@ -104,5 +105,11 @@ export const api = {
     },
   },
 }
+
+// ============================================================
+// EXPORT API (switches based on mock mode)
+// ============================================================
+
+export const api = isMockMode() ? mockApi : realApi
 
 export { BASE_URL }
