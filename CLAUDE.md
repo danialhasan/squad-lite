@@ -17,94 +17,219 @@ Demonstrates:
 
 ---
 
-## Architecture Overview
+## CRITICAL: Dual-Path Strategy
+
+**We have two specs. Choose based on E2B validation in Hour 0-1.**
+
+| Spec | When to Use | Interface |
+|------|-------------|-----------|
+| [`docs/SPEC-WEB.md`](docs/SPEC-WEB.md) | E2B validation passes | Web UI + API |
+| [`docs/SPEC-CLI.md`](docs/SPEC-CLI.md) | E2B validation fails OR too buggy | CLI + Terminal |
+
+### Decision Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     SQUAD LITE                               │
-├─────────────────────────────────────────────────────────────┤
-│  Director Agent (Persistent)                                 │
-│  ├─ Receives task from human                                │
-│  ├─ Decomposes into subtasks                                │
-│  ├─ Spawns Specialist agents                                │
-│  └─ Aggregates results                                      │
-├─────────────────────────────────────────────────────────────┤
-│  Specialist Agents (Persistent, N=3 for demo)               │
-│  ├─ Receive subtask via MongoDB message                     │
-│  ├─ Execute (web search, code analysis, etc.)               │
-│  ├─ Checkpoint progress to MongoDB                          │
-│  └─ Send results back via MongoDB message                   │
-├─────────────────────────────────────────────────────────────┤
-│  MongoDB Atlas                                               │
-│  ├─ agents: Agent registry & state                          │
-│  ├─ messages: Inter-agent communication bus                 │
-│  ├─ checkpoints: Context persistence for resume             │
-│  └─ tasks: Work unit tracking                               │
-└─────────────────────────────────────────────────────────────┘
+Hour 0-1: Run E2B Validation
+          ├─ All tests pass → Use SPEC-WEB.md (E2B + Vue + Fastify)
+          └─ Any test fails → Use SPEC-CLI.md (Local + CLI)
+
+Both paths deliver THE SAME DEMO:
+  • Multi-agent coordination via MongoDB
+  • Checkpoint/resume on kill/restart
+  • Real-time visibility in MongoDB Compass
 ```
+
+### Run Validation
+
+```bash
+pnpm tsx scripts/validate-e2b.ts
+```
+
+See [`docs/DEP-GRAPH.md`](docs/DEP-GRAPH.md) for detailed validation steps.
 
 ---
 
 ## Tech Stack
 
-- **Runtime:** Node.js 20+ / TypeScript
-- **Agent SDK:** Claude Agent SDK (@anthropic-ai/agent-sdk)
-- **Database:** MongoDB Atlas
-- **RAG:** Voyager (video/multimodal RAG) — stretch goal
-- **Validation:** Zod
-- **Build:** pnpm + tsx
+| Component | Web Approach | CLI Approach |
+|-----------|--------------|--------------|
+| Runtime | Node.js 20.x + TypeScript | Same |
+| Package Manager | pnpm | Same |
+| Database | MongoDB Atlas | Same |
+| Validation | Zod | Same |
+| Agent Execution | **E2B Sandboxes** | **Local Node processes** |
+| Backend | **Fastify + WebSocket** | **None** |
+| Frontend | **Vue 3 + Vite** | **Terminal + MongoDB Compass** |
+| AI SDK | @anthropic-ai/sdk | Same |
 
 ---
 
-## Core Systems (2 Features for Demo)
+## Architecture (Shared Core)
 
-### Feature 1: Agent Coordination (Statement 2)
+Both approaches share the same core systems:
 
-**MongoDB Collections:**
-- `agents` — Registry of active agents with state
-- `messages` — Inter-agent message bus with priority, threading
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     COORDINATION LAYER                       │
+├─────────────────────────────────────────────────────────────┤
+│  Message Bus (src/coordination/messages.ts)     ✅ DONE     │
+│  Checkpoints (src/coordination/checkpoints.ts)  ✅ DONE     │
+│  Tasks (src/coordination/tasks.ts)              🔴 TODO     │
+│  Context (src/coordination/context.ts)          🔴 TODO     │
+├─────────────────────────────────────────────────────────────┤
+│                      AGENT LAYER                             │
+├─────────────────────────────────────────────────────────────┤
+│  Base Agent (src/agents/base.ts)                ✅ DONE     │
+│  Director (src/agents/director.ts)              🔴 TODO     │
+│  Specialist (src/agents/specialist.ts)          🔴 TODO     │
+├─────────────────────────────────────────────────────────────┤
+│                       DATA LAYER                             │
+├─────────────────────────────────────────────────────────────┤
+│  MongoDB Connection (src/db/mongo.ts)           ✅ DONE     │
+│  Zod Schemas (src/db/mongo.ts)                  ✅ DONE     │
+└─────────────────────────────────────────────────────────────┘
+```
 
-**Flow:**
-1. Director receives task
-2. Director creates subtasks in `tasks` collection
-3. Director sends messages to Specialists via `messages`
-4. Specialists poll inbox, execute, respond
-5. Director aggregates results
+### Difference: Execution Layer
 
-### Feature 2: Context Persistence (Statement 1)
-
-**MongoDB Collections:**
-- `checkpoints` — Agent state snapshots with resume pointers
-
-**Flow:**
-1. Agent works, accumulates context
-2. At checkpoint trigger (time-based, task-complete, or manual)
-3. Agent writes checkpoint: `{summary, resume_pointer, tokens_used}`
-4. On restart: Agent loads latest checkpoint, continues from resume_pointer
+| Web Approach | CLI Approach |
+|--------------|--------------|
+| E2B Sandbox Manager | Local Process Manager |
+| Fastify API Routes | CLI Commands (Commander.js) |
+| Vue Dashboard | Terminal output |
+| WebSocket streaming | stdout/stderr |
 
 ---
 
 ## Demo Script (3 minutes)
 
-1. **Show:** Director receives complex task
+**Same for both approaches:**
+
+1. **Start:** Director receives task "Research MongoDB agent coordination"
 2. **Show:** MongoDB Compass — `agents` collection shows Director spawning Specialists
 3. **Show:** MongoDB Compass — `messages` collection shows coordination in real-time
-4. **Kill:** One Specialist agent mid-task (Ctrl+C)
-5. **Show:** MongoDB Compass — checkpoint exists
-6. **Restart:** Agent loads checkpoint, continues
-7. **Result:** Task completes successfully
+4. **Watch:** Specialists execute research tasks in parallel
+5. **Kill:** One Specialist agent mid-task (Ctrl+C or UI button)
+6. **Show:** MongoDB Compass — `checkpoints` shows saved state
+7. **Restart:** Specialist loads checkpoint, continues from last action
+8. **Complete:** Director aggregates results, outputs summary
+
+**"Wow" moment:** Kill/restart with seamless resume proves MongoDB coordination + persistence
 
 ---
 
-## Session Directory
+## Quick Start
 
-Agent context persists at:
+### Prerequisites
+
+```bash
+# Clone repo
+git clone https://github.com/danialhasan/squad-lite
+cd squad-lite
+
+# Install dependencies
+pnpm install
+
+# Set up environment
+cp .env.example .env
+# Edit .env with your keys:
+#   MONGODB_URI=mongodb+srv://...
+#   ANTHROPIC_API_KEY=sk-ant-...
+#   E2B_API_KEY=... (if using Web approach)
 ```
-docs/sessions/{YYYY-MM-DD}/
-├── MISSION.md          # Today's objective
-├── PLANNING.md         # Discovery + decisions
-├── checkpoints/        # Agent state snapshots
-└── artifacts/          # Outputs, screenshots
+
+### Hour 0-1: Validation
+
+```bash
+# Test MongoDB connection
+pnpm tsx scripts/validate-mongo.ts
+
+# Test E2B (determines Web vs CLI path)
+pnpm tsx scripts/validate-e2b.ts
+```
+
+### Development
+
+**Web Approach:**
+```bash
+# Start backend
+pnpm run dev:api
+
+# Start frontend (separate terminal)
+cd web && pnpm run dev
+
+# Open http://localhost:3000
+```
+
+**CLI Approach:**
+```bash
+# Start Director
+pnpm run director --task "Research MongoDB agent coordination"
+
+# Specialists spawn automatically via Director
+# Or manually: pnpm run specialist --specialization researcher
+```
+
+---
+
+## Project Structure
+
+```
+squad-lite/
+├── CLAUDE.md                     # This file (start here)
+├── package.json
+├── tsconfig.json
+├── .env.example
+│
+├── docs/
+│   ├── SPEC-WEB.md              # Web approach spec
+│   ├── SPEC-CLI.md              # CLI fallback spec
+│   ├── DEP-GRAPH.md             # Work breakdown + validation gate
+│   └── research/                # E2B, SDK research artifacts
+│
+├── .claude/
+│   └── skills/                  # Behavior contract skills (7 skills)
+│       ├── director/SKILL.md
+│       ├── specialist/
+│       │   ├── researcher/SKILL.md
+│       │   ├── writer/SKILL.md
+│       │   └── analyst/SKILL.md
+│       └── shared/
+│           ├── communication/SKILL.md
+│           ├── checkpointing/SKILL.md
+│           └── coordination/SKILL.md
+│
+├── src/
+│   ├── config.ts                # Environment config
+│   ├── db/mongo.ts              # ✅ MongoDB + Schemas
+│   ├── coordination/
+│   │   ├── messages.ts          # ✅ Message bus
+│   │   ├── checkpoints.ts       # ✅ Checkpoint system
+│   │   ├── tasks.ts             # 🔴 Task management
+│   │   └── context.ts           # 🔴 Context builder
+│   ├── agents/
+│   │   ├── base.ts              # ✅ Base agent
+│   │   ├── director.ts          # 🔴 Director
+│   │   └── specialist.ts        # 🔴 Specialist
+│   ├── sandbox/                 # Web approach only
+│   │   └── manager.ts           # 🔴 E2B integration
+│   ├── process/                 # CLI approach only
+│   │   └── manager.ts           # 🔴 Local process manager
+│   ├── sdk/
+│   │   └── runner.ts            # 🔴 Claude SDK wrapper
+│   └── api/                     # Web approach only
+│       ├── server.ts
+│       └── routes/
+│
+├── web/                         # Web approach only
+│   ├── package.json
+│   └── src/
+│       ├── App.vue
+│       └── components/
+│
+└── scripts/
+    ├── validate-e2b.ts          # E2B validation script
+    └── validate-mongo.ts        # MongoDB validation script
 ```
 
 ---
@@ -113,53 +238,53 @@ docs/sessions/{YYYY-MM-DD}/
 
 ### From Squad (Maintain These)
 
-1. **Named exports only** — No default exports (grepability)
-2. **No classes** — Functional factories
-3. **Zod validation** — Runtime type safety on all inputs
-4. **Contract-first** — Define types before implementation
+```typescript
+// ✅ Named exports only
+export const createAgent = () => {}
+
+// ❌ No default exports
+export default function createAgent() {}
+
+// ✅ Factory functions
+export const createRunner = (config) => ({...})
+
+// ❌ No classes
+class Runner {}
+
+// ✅ Config layer
+import { config } from './config.js'
+
+// ❌ No direct env access
+process.env.MONGODB_URI
+```
 
 ### Hackathon-Specific
 
 1. **Happy path only** — No complex error handling
-2. **MongoDB is the UI** — Use Compass for visualization
+2. **MongoDB is visibility** — Use Compass for judges
 3. **3 agents max** — Reliable demo over impressive scale
 4. **Checkpoint everything** — Enable the kill/restart demo
-
----
-
-## Quick Commands
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run Director agent
-pnpm run director
-
-# Run Specialist agent
-pnpm run specialist -- --type=researcher
-
-# Watch MongoDB (requires mongosh)
-mongosh --eval "db.messages.watch()"
-```
-
----
-
-## Project Management
-
-- **Linear Team:** `HACK`
-- **Spec:** `docs/SPEC.md` — Exhaustive system spec with dependency graph
-- **Tickets:** Created from spec, assigned in Linear
+5. **Fail fast** — Validate E2B in Hour 0, pivot if needed
 
 ---
 
 ## Links
 
-- **Linear:** https://linear.app/trysquad/team/HACK
 - **GitHub:** https://github.com/danialhasan/squad-lite
+- **Linear:** https://linear.app/trysquad/team/HACK
 - **MongoDB Atlas:** [Cluster Dashboard]
+- **E2B Dashboard:** https://e2b.dev/dashboard
 - **Hackathon Page:** https://cerebralvalley.ai/e/agentic-orchestration-hackathon
 
 ---
 
-_Last updated: 2026-01-10_
+## Reading Order for Agents
+
+1. **This file** — Overview + dual-path strategy
+2. **[`docs/DEP-GRAPH.md`](docs/DEP-GRAPH.md)** — Work breakdown + validation gate
+3. **[`docs/SPEC-WEB.md`](docs/SPEC-WEB.md)** OR **[`docs/SPEC-CLI.md`](docs/SPEC-CLI.md)** — Based on E2B validation
+4. **Behavior skills** — `.claude/skills/` for agent protocols
+
+---
+
+_Last updated: 2026-01-10 (v3.0 - Dual-path strategy)_

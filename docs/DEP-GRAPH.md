@@ -3,6 +3,154 @@
 **Purpose:** Enable parallel development by Danial + Shafan
 **Total Work:** 8 work packages, ~7 hours estimated
 **Critical Path:** 4.5 hours (with parallelization)
+**Strategy:** E2B validation first → Decision gate → Build (Web or CLI)
+
+---
+
+## CRITICAL: Hour 0-1 Validation Gate
+
+**Before building anything, validate E2B in the first hour.**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    HOUR 0-1: E2B VALIDATION (Both Devs)                 │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  0:00-0:15  Setup                                                       │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  • Get E2B API key from https://e2b.dev/dashboard                       │
+│  • Add to .env: E2B_API_KEY=xxx                                         │
+│  • pnpm add @e2b/sdk                                                    │
+│                                                                         │
+│  0:15-0:30  Test 1: Sandbox Creation                                    │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  • Create sandbox: Sandbox.create({ timeoutMs: 60000 })                 │
+│  • ✅ PASS: Creates in < 5 seconds                                       │
+│  • ❌ FAIL: API error, timeout, or > 10 seconds                          │
+│                                                                         │
+│  0:30-0:40  Test 2: Command Execution                                   │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  • Execute: sandbox.commands.run('echo "hello world"')                  │
+│  • Execute: sandbox.commands.run('npm --version')                       │
+│  • ✅ PASS: Returns expected output                                      │
+│  • ❌ FAIL: Hangs, errors, or no output                                  │
+│                                                                         │
+│  0:40-0:50  Test 3: Pause/Resume                                        │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  • Pause: await sandbox.pause()                                         │
+│  • Resume: await sandbox.resume()                                       │
+│  • Execute command after resume                                         │
+│  • ✅ PASS: Resumes in < 3 seconds, state preserved                      │
+│  • ❌ FAIL: Slow resume, state lost, or errors                           │
+│                                                                         │
+│  0:50-1:00  DECISION POINT                                              │
+│  ─────────────────────────────────────────────────────────────────────  │
+│  • All 3 tests pass → Continue with SPEC-WEB.md                         │
+│  • Any test fails → Switch to SPEC-CLI.md                               │
+│  • Write decision in session log with rationale                         │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### E2B Validation Script
+
+Create this file to run validation:
+
+```typescript
+// scripts/validate-e2b.ts
+
+import { Sandbox } from '@e2b/sdk'
+
+const runValidation = async () => {
+  console.log('=== E2B Validation ===\n')
+
+  // Test 1: Sandbox Creation
+  console.log('Test 1: Sandbox Creation...')
+  const start1 = Date.now()
+  let sandbox: Sandbox
+
+  try {
+    sandbox = await Sandbox.create({ timeoutMs: 60000 })
+    const duration = Date.now() - start1
+    console.log(`✅ PASS: Sandbox created in ${duration}ms`)
+    console.log(`   Sandbox ID: ${sandbox.id}\n`)
+  } catch (error) {
+    console.log(`❌ FAIL: ${error}`)
+    console.log('\n🚨 DECISION: Switch to SPEC-CLI.md')
+    process.exit(1)
+  }
+
+  // Test 2: Command Execution
+  console.log('Test 2: Command Execution...')
+  try {
+    const result = await sandbox.commands.run('echo "hello world"')
+    console.log(`✅ PASS: Command executed`)
+    console.log(`   Output: ${result.stdout}\n`)
+  } catch (error) {
+    console.log(`❌ FAIL: ${error}`)
+    await sandbox.kill()
+    console.log('\n🚨 DECISION: Switch to SPEC-CLI.md')
+    process.exit(1)
+  }
+
+  // Test 3: Pause/Resume
+  console.log('Test 3: Pause/Resume...')
+  try {
+    const start3 = Date.now()
+    await sandbox.pause()
+    console.log('   Paused sandbox')
+
+    await sandbox.resume()
+    const resumeDuration = Date.now() - start3
+
+    const result = await sandbox.commands.run('echo "resumed"')
+    console.log(`✅ PASS: Resume in ${resumeDuration}ms`)
+    console.log(`   Post-resume output: ${result.stdout}\n`)
+  } catch (error) {
+    console.log(`❌ FAIL: ${error}`)
+    console.log('\n🚨 DECISION: Switch to SPEC-CLI.md')
+    process.exit(1)
+  }
+
+  // Cleanup
+  await sandbox.kill()
+
+  console.log('=== ALL TESTS PASSED ===')
+  console.log('✅ DECISION: Continue with SPEC-WEB.md')
+}
+
+runValidation().catch(console.error)
+```
+
+Run with: `pnpm tsx scripts/validate-e2b.ts`
+
+---
+
+## Post-Validation: Two Paths
+
+### Path A: Web Approach (E2B passes)
+
+```
+Hour 1-2:   WP1 (Task Mgmt) + WP2 (E2B Sandbox) in parallel
+Hour 2-3:   WP3 (Context) + WP4 (SDK Integration)
+Hour 3-5:   WP5 (Director) || WP6 (Specialist) in parallel
+Hour 5-6:   WP7 (Web API) + WP8a (Vue Dashboard)
+Hour 6-7:   Demo polish
+
+See: SPEC-WEB.md
+```
+
+### Path B: CLI Approach (E2B fails)
+
+```
+Hour 1-2:   WP1 (Task Mgmt) + WP2b (Process Manager) in parallel
+Hour 2-3:   WP3 (Context) + WP4b (SDK Runner - simplified)
+Hour 3-5:   WP5 (Director) || WP6 (Specialist) in parallel
+Hour 5-6:   WP7b (CLI Commands)
+Hour 6-7:   Demo polish (extra buffer!)
+
+See: SPEC-CLI.md
+```
 
 ---
 
