@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 
 export interface Checkpoint {
   checkpointId: string
@@ -12,11 +12,31 @@ const props = defineProps<{
   checkpoints: Checkpoint[]
 }>()
 
+// Track which checkpoint should flash (newest one)
+const flashCheckpointId = ref<string | null>(null)
+
 // Sort checkpoints newest first
 const sortedCheckpoints = computed(() =>
   [...props.checkpoints].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   )
+)
+
+// Flash highlight when new checkpoint arrives
+watch(
+  () => props.checkpoints.length,
+  (newLen, oldLen) => {
+    if (newLen > (oldLen ?? 0) && sortedCheckpoints.value.length > 0) {
+      // Flash the newest checkpoint (first in sorted order)
+      const newest = sortedCheckpoints.value[0]
+      if (newest) {
+        flashCheckpointId.value = newest.checkpointId
+        setTimeout(() => {
+          flashCheckpointId.value = null
+        }, 900)
+      }
+    }
+  }
 )
 
 // Truncate IDs
@@ -46,7 +66,7 @@ const isKillCheckpoint = (phase: string) =>
       <div
         v-for="cp in sortedCheckpoints"
         :key="cp.checkpointId"
-        :class="['checkpoint-item', { 'is-kill': isKillCheckpoint(cp.phase) }]"
+        :class="['checkpoint-item', { 'is-kill': isKillCheckpoint(cp.phase), flash: flashCheckpointId === cp.checkpointId }]"
       >
         <div class="checkpoint-dot"></div>
         <div class="checkpoint-info">
@@ -67,8 +87,8 @@ const isKillCheckpoint = (phase: string) =>
 
 <style scoped>
 .checkpoint-timeline {
-  background: #1e1e2e;
-  border: 1px solid #313244;
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -80,18 +100,18 @@ const isKillCheckpoint = (phase: string) =>
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #313244;
+  border-bottom: 1px solid var(--ctp-surface0);
 }
 
 .timeline-header h3 {
   margin: 0;
   font-size: 0.95em;
-  color: #cdd6f4;
+  color: var(--ctp-text);
 }
 
 .count {
-  background: #313244;
-  color: #6c7086;
+  background: var(--ctp-surface0);
+  color: var(--ctp-overlay0);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.8em;
@@ -107,14 +127,21 @@ const isKillCheckpoint = (phase: string) =>
   display: flex;
   gap: 12px;
   padding: 8px 0;
-  border-left: 2px solid #313244;
+  border-left: 2px solid var(--ctp-surface0);
   margin-left: 4px;
   padding-left: 16px;
   position: relative;
+  animation: fadeInUp 0.2s ease-out;
+  transition: border-color 0.3s ease;
+}
+
+/* Flash highlight for newest checkpoint */
+.checkpoint-item.flash {
+  animation: flashIn 0.9s ease-out;
 }
 
 .checkpoint-item.is-kill {
-  border-left-color: #f38ba8;
+  border-left-color: var(--ctp-red);
 }
 
 .checkpoint-dot {
@@ -123,12 +150,13 @@ const isKillCheckpoint = (phase: string) =>
   top: 12px;
   width: 8px;
   height: 8px;
-  background: #45475a;
+  background: var(--ctp-surface1);
   border-radius: 50%;
+  transition: background 0.2s ease;
 }
 
 .checkpoint-item.is-kill .checkpoint-dot {
-  background: #f38ba8;
+  background: var(--ctp-red);
 }
 
 .checkpoint-info {
@@ -142,29 +170,63 @@ const isKillCheckpoint = (phase: string) =>
 }
 
 .agent-id {
-  font-family: monospace;
-  color: #89b4fa;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--ctp-blue);
   font-size: 0.85em;
 }
 
 .timestamp {
-  color: #6c7086;
+  color: var(--ctp-overlay0);
   font-size: 0.8em;
 }
 
 .checkpoint-phase {
-  color: #a6adc8;
+  color: var(--ctp-subtext0);
   font-size: 0.9em;
 }
 
 .checkpoint-item.is-kill .checkpoint-phase {
-  color: #f38ba8;
+  color: var(--ctp-red);
 }
 
 .empty-state {
   text-align: center;
-  color: #6c7086;
+  color: var(--ctp-overlay0);
   padding: 32px;
   font-style: italic;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flashIn {
+  0% {
+    background: rgba(137, 180, 250, 0.14);
+    border-left-color: rgba(137, 180, 250, 0.65);
+  }
+  100% {
+    background: transparent;
+    border-left-color: var(--ctp-surface0);
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .checkpoint-item {
+    animation: none;
+  }
+  .checkpoint-item.flash {
+    animation: none;
+    background: rgba(137, 180, 250, 0.14);
+  }
 }
 </style>

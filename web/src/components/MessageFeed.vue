@@ -16,13 +16,26 @@ const props = defineProps<{
 
 const feedRef = ref<HTMLElement | null>(null)
 
-// Auto-scroll to bottom when new messages arrive
+// Track which message should flash (newest one)
+const flashMessageId = ref<string | null>(null)
+
+// Auto-scroll to bottom when new messages arrive + flash highlight
 watch(
   () => props.messages.length,
-  async () => {
+  async (newLen, oldLen) => {
     await nextTick()
     if (feedRef.value) {
       feedRef.value.scrollTop = feedRef.value.scrollHeight
+    }
+    // Flash the newest message
+    if (newLen > (oldLen ?? 0) && props.messages.length > 0) {
+      const newest = props.messages[props.messages.length - 1]
+      if (newest) {
+        flashMessageId.value = newest.messageId
+        setTimeout(() => {
+          flashMessageId.value = null
+        }, 900)
+      }
     }
   }
 )
@@ -31,11 +44,11 @@ watch(
 const shortId = (id: string) => id.slice(0, 8)
 
 // Message type icons and colors
-const typeConfig: Record<Message['messageType'], { icon: string; color: string }> = {
-  task: { icon: '→', color: 'text-blue-400' },
-  result: { icon: '✓', color: 'text-green-400' },
-  status: { icon: 'ℹ', color: 'text-yellow-400' },
-  error: { icon: '✗', color: 'text-red-400' },
+const typeConfig: Record<Message['messageType'], { icon: string; class: string }> = {
+  task: { icon: '→', class: 'type-task' },
+  result: { icon: '✓', class: 'type-result' },
+  status: { icon: 'ℹ', class: 'type-status' },
+  error: { icon: '✗', class: 'type-error' },
 }
 
 // Format timestamp
@@ -56,10 +69,10 @@ const formatTime = (iso: string) => {
       <div
         v-for="msg in messages"
         :key="msg.messageId"
-        class="message-item"
+        :class="['message-item', { flash: flashMessageId === msg.messageId }]"
       >
         <div class="message-header">
-          <span :class="['type-icon', typeConfig[msg.messageType].color]">
+          <span :class="['type-icon', typeConfig[msg.messageType].class]">
             {{ typeConfig[msg.messageType].icon }}
           </span>
           <span class="agents">
@@ -79,8 +92,8 @@ const formatTime = (iso: string) => {
 
 <style scoped>
 .message-feed {
-  background: #1e1e2e;
-  border: 1px solid #313244;
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -92,18 +105,18 @@ const formatTime = (iso: string) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #313244;
+  border-bottom: 1px solid var(--ctp-surface0);
 }
 
 .feed-header h3 {
   margin: 0;
   font-size: 0.95em;
-  color: #cdd6f4;
+  color: var(--ctp-text);
 }
 
 .count {
-  background: #313244;
-  color: #6c7086;
+  background: var(--ctp-surface0);
+  color: var(--ctp-overlay0);
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.8em;
@@ -116,10 +129,18 @@ const formatTime = (iso: string) => {
 }
 
 .message-item {
-  background: #181825;
+  background: var(--ctp-mantle);
+  border: 1px solid transparent;
   border-radius: 6px;
   padding: 10px 12px;
   margin-bottom: 8px;
+  animation: fadeInUp 0.2s ease-out;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Flash highlight for newest message */
+.message-item.flash {
+  animation: flashIn 0.9s ease-out;
 }
 
 .message-header {
@@ -134,19 +155,25 @@ const formatTime = (iso: string) => {
   font-weight: bold;
 }
 
+/* Type-specific colors using CSS variables */
+.type-icon.type-task { color: var(--ctp-blue); }
+.type-icon.type-result { color: var(--ctp-green); }
+.type-icon.type-status { color: var(--ctp-yellow); }
+.type-icon.type-error { color: var(--ctp-red); }
+
 .agents {
-  font-family: monospace;
-  color: #cdd6f4;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--ctp-text);
 }
 
 .timestamp {
   margin-left: auto;
-  color: #6c7086;
+  color: var(--ctp-overlay0);
   font-size: 0.9em;
 }
 
 .message-preview {
-  color: #a6adc8;
+  color: var(--ctp-subtext0);
   font-size: 0.9em;
   line-height: 1.4;
   word-break: break-word;
@@ -154,14 +181,42 @@ const formatTime = (iso: string) => {
 
 .empty-state {
   text-align: center;
-  color: #6c7086;
+  color: var(--ctp-overlay0);
   padding: 32px;
   font-style: italic;
 }
 
-/* Colors */
-.text-blue-400 { color: #89b4fa; }
-.text-green-400 { color: #a6e3a1; }
-.text-yellow-400 { color: #f9e2af; }
-.text-red-400 { color: #f38ba8; }
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flashIn {
+  0% {
+    background: rgba(137, 180, 250, 0.14);
+    border-color: rgba(137, 180, 250, 0.45);
+  }
+  100% {
+    background: var(--ctp-mantle);
+    border-color: transparent;
+  }
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .message-item {
+    animation: none;
+  }
+  .message-item.flash {
+    animation: none;
+    background: rgba(137, 180, 250, 0.14);
+  }
+}
 </style>

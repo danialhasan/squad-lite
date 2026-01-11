@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+const props = defineProps<{
+  isMockMode?: boolean
+}>()
+
 const emit = defineEmits<{
   spawn: []
   submitTask: [task: string]
@@ -10,6 +14,9 @@ const emit = defineEmits<{
 const taskInput = ref('')
 const isSpawning = ref(false)
 const isSubmitting = ref(false)
+
+// Demo helper state
+const showDemoHelper = ref(true)
 
 const handleSpawn = async () => {
   isSpawning.value = true
@@ -29,10 +36,31 @@ const handleReset = () => {
   taskInput.value = ''
   emit('reset')
 }
+
+const dismissHelper = () => {
+  showDemoHelper.value = false
+}
 </script>
 
 <template>
   <div class="demo-controls">
+    <!-- Demo Mode Helper (shown in mock mode) -->
+    <div v-if="isMockMode && showDemoHelper" class="demo-helper">
+      <div class="demo-helper-content">
+        <span class="demo-badge">DEMO MODE</span>
+        <div class="demo-tips">
+          <p><strong>Quick Start:</strong></p>
+          <ol>
+            <li>Click <strong>Spawn Director</strong> to create an agent</li>
+            <li>Type a task and click <strong>Submit Task</strong></li>
+            <li>Watch coordination unfold in Messages</li>
+            <li><strong>Kill</strong> an agent, then <strong>Restart</strong> to see checkpoint resume</li>
+          </ol>
+        </div>
+        <button class="dismiss-btn" @click="dismissHelper">Got it</button>
+      </div>
+    </div>
+
     <div class="controls-row">
       <button
         class="btn btn-spawn"
@@ -71,10 +99,80 @@ const handleReset = () => {
 
 <style scoped>
 .demo-controls {
-  background: #1e1e2e;
-  border: 1px solid #313244;
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
   border-radius: 8px;
   padding: 16px;
+}
+
+/* Demo Mode Helper */
+.demo-helper {
+  margin-bottom: 16px;
+  padding: 14px;
+  background: rgba(137, 180, 250, 0.08);
+  border: 1px solid rgba(137, 180, 250, 0.25);
+  border-radius: 8px;
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.demo-helper-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.demo-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--ctp-blue);
+  color: var(--ctp-crust);
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.demo-tips {
+  color: var(--ctp-subtext0);
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.demo-tips p {
+  margin: 0 0 6px 0;
+  color: var(--ctp-text);
+}
+
+.demo-tips ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.demo-tips li {
+  margin-bottom: 4px;
+}
+
+.demo-tips strong {
+  color: var(--ctp-blue);
+}
+
+.dismiss-btn {
+  align-self: flex-end;
+  padding: 6px 14px;
+  background: var(--ctp-surface0);
+  color: var(--ctp-subtext0);
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.dismiss-btn:hover {
+  background: var(--ctp-surface1);
+  color: var(--ctp-text);
 }
 
 .controls-row {
@@ -94,7 +192,7 @@ const handleReset = () => {
   border-radius: 6px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
@@ -107,36 +205,67 @@ const handleReset = () => {
 }
 
 .btn-spawn {
-  background: #89b4fa;
-  color: #1e1e2e;
+  background: var(--ctp-blue);
+  color: var(--ctp-crust);
+}
+
+.btn-spawn:hover:not(:disabled) {
+  background: #9fc5fb;
 }
 
 .btn-reset {
-  background: #45475a;
-  color: #cdd6f4;
+  background: var(--ctp-surface1);
+  color: var(--ctp-text);
+}
+
+.btn-reset:hover:not(:disabled) {
+  background: var(--ctp-surface2);
 }
 
 .btn-submit {
-  background: #a6e3a1;
-  color: #1e1e2e;
+  background: var(--ctp-green);
+  color: var(--ctp-crust);
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #b8ebb3;
 }
 
 .task-input {
   flex: 1;
   padding: 10px 14px;
-  background: #181825;
-  border: 1px solid #313244;
+  background: var(--ctp-mantle);
+  border: 1px solid var(--ctp-surface0);
   border-radius: 6px;
-  color: #cdd6f4;
+  color: var(--ctp-text);
   font-size: 0.95em;
+  transition: border-color 0.15s ease;
 }
 
 .task-input::placeholder {
-  color: #6c7086;
+  color: var(--ctp-overlay0);
 }
 
 .task-input:focus {
   outline: none;
-  border-color: #89b4fa;
+  border-color: var(--ctp-blue);
+}
+
+/* Animation */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-helper {
+    animation: none;
+  }
 }
 </style>
