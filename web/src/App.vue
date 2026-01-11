@@ -319,7 +319,7 @@ onUnmounted(() => {
     <!-- Header -->
     <header class="header">
       <div class="header-left">
-        <h1>Squad Lite</h1>
+        <h1>Coherence</h1>
         <span :class="['connection-status', { connected: isConnected }]">
           {{ isConnected ? 'Connected' : 'Disconnected' }}
         </span>
@@ -362,20 +362,15 @@ onUnmounted(() => {
       <button @click="error = null">×</button>
     </div>
 
-    <!-- Controls -->
-    <DemoControls
-      :is-mock-mode="mockMode"
-      @spawn="handleSpawn"
-      @submit-task="handleSubmitTask"
-      @reset="handleReset"
-    />
-
-    <!-- Main Content -->
+    <!-- Main Content: 3-Column Layout -->
     <main class="main-content">
-      <!-- Left: Agents -->
-      <section class="agents-section">
-        <h2>Agents</h2>
-        <div class="agents-grid">
+      <!-- Left Column: Agents -->
+      <aside class="agents-panel">
+        <div class="panel-header">
+          <h2>AGENTS</h2>
+          <span class="panel-count">{{ agents.length }}</span>
+        </div>
+        <div class="agents-list">
           <AgentCard
             v-for="agent in agents"
             :key="agent.agentId"
@@ -384,20 +379,48 @@ onUnmounted(() => {
             @restart="handleRestart"
           />
           <div v-if="agents.length === 0" class="empty-state">
-            No agents. Click "Spawn Director" to start.
+            No agents yet.<br />Click "Spawn Director" to start.
           </div>
         </div>
-      </section>
+      </aside>
 
-      <!-- Right: Feeds -->
-      <section class="feeds-section">
-        <div class="feed-row">
-          <MessageFeed :messages="messages" />
-          <CheckpointTimeline :checkpoints="checkpoints" />
+      <!-- Center Column: Output (main focus) -->
+      <section class="output-panel">
+        <div class="panel-header">
+          <h2>Output</h2>
+          <span class="panel-count">{{ outputs.length }} lines</span>
         </div>
         <OutputPanel :outputs="outputs" />
       </section>
+
+      <!-- Right Column: Messages + Checkpoints -->
+      <aside class="feeds-panel">
+        <div class="feed-card">
+          <div class="panel-header">
+            <h2>Messages</h2>
+            <span class="panel-count">{{ messages.length }}</span>
+          </div>
+          <MessageFeed :messages="messages" />
+        </div>
+        <div class="feed-card">
+          <div class="panel-header">
+            <h2>Checkpoints</h2>
+            <span class="panel-count">{{ checkpoints.length }}</span>
+          </div>
+          <CheckpointTimeline :checkpoints="checkpoints" />
+        </div>
+      </aside>
     </main>
+
+    <!-- Bottom Input Bar (ChatGPT-style) -->
+    <footer class="input-bar">
+      <DemoControls
+        :is-mock-mode="mockMode"
+        @spawn="handleSpawn"
+        @submit-task="handleSubmitTask"
+        @reset="handleReset"
+      />
+    </footer>
   </div>
 </template>
 
@@ -611,70 +634,198 @@ onUnmounted(() => {
 }
 
 /* ============================================================
-   MAIN CONTENT - RESPONSIVE GRID
+   MAIN CONTENT - 3-COLUMN LAYOUT
    ============================================================ */
 
 .main-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 280px 1fr 320px;
   gap: 12px;
   flex: 1;
+  min-height: 0; /* Important for nested scroll */
+  overflow: hidden;
+}
+
+/* Panel header styling */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ctp-surface0);
+  flex-shrink: 0;
+}
+
+.panel-header h2 {
+  font-size: 0.75em;
+  color: var(--ctp-subtext0);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  margin: 0;
+}
+
+.panel-count {
+  font-size: 0.75em;
+  color: var(--ctp-overlay0);
+  background: var(--ctp-surface0);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+/* Left Column: Agents Panel */
+.agents-panel {
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.agents-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Center Column: Output Panel */
+.output-panel {
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.output-panel > :deep(.output-panel) {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+/* Right Column: Feeds Panel */
+.feeds-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.feed-card {
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.feed-card > :deep(.message-feed),
+.feed-card > :deep(.checkpoint-timeline) {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* Empty state styling */
+.empty-state {
+  color: var(--ctp-subtext0);
+  font-style: italic;
+  padding: 24px 16px;
+  text-align: center;
+  background: var(--ctp-mantle);
+  border: 1px dashed var(--ctp-surface0);
+  border-radius: 8px;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   BOTTOM INPUT BAR (ChatGPT-style)
+   ============================================================ */
+
+.input-bar {
+  flex-shrink: 0;
+  padding: 12px 0 0;
+  background: transparent;
+}
+
+.input-bar :deep(.demo-controls) {
+  background: var(--ctp-base);
+  border: 1px solid var(--ctp-surface0);
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.input-bar :deep(.demo-helper) {
+  margin-bottom: 12px;
+}
+
+.input-bar :deep(.input-row) {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input-bar :deep(.task-input) {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: 1em;
+  border-radius: 8px;
+  min-width: 0; /* Allow shrinking */
+}
+
+.input-bar :deep(.btn) {
+  padding: 12px 18px;
+  border-radius: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Responsive: Stack on smaller screens */
+@media (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 240px 1fr 280px;
+  }
 }
 
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
-  }
-}
-
-.agents-section h2,
-.feeds-section h2 {
-  font-size: 0.85em;
-  color: var(--ctp-subtext0);
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.agents-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.feeds-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.feed-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  height: 250px;
-}
-
-@media (max-width: 1024px) {
-  .feed-row {
-    grid-template-columns: 1fr;
-    height: auto;
+    grid-template-rows: auto 1fr auto;
   }
 
-  .feed-row > * {
-    min-height: 200px;
+  .agents-panel {
+    max-height: 200px;
   }
-}
 
-.empty-state {
-  color: var(--ctp-subtext0);
-  font-style: italic;
-  padding: 32px;
-  text-align: center;
-  background: var(--ctp-base);
-  border: 1px dashed var(--ctp-surface0);
-  border-radius: 12px;
-  width: 100%;
+  .agents-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .feeds-panel {
+    flex-direction: row;
+  }
+
+  .feed-card {
+    min-height: 250px;
+  }
 }
 
 /* ============================================================

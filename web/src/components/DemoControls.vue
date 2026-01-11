@@ -61,7 +61,7 @@ const dismissHelper = () => {
       </div>
     </div>
 
-    <div class="controls-row">
+    <div class="input-row">
       <button
         class="btn btn-spawn"
         :disabled="isSpawning"
@@ -70,15 +70,6 @@ const dismissHelper = () => {
         {{ isSpawning ? 'Spawning...' : 'Spawn Director' }}
       </button>
 
-      <button
-        class="btn btn-reset"
-        @click="handleReset"
-      >
-        Reset Demo
-      </button>
-    </div>
-
-    <div class="task-input-row">
       <input
         v-model="taskInput"
         type="text"
@@ -86,12 +77,20 @@ const dismissHelper = () => {
         class="task-input"
         @keyup.enter="handleSubmit"
       />
+
       <button
         class="btn btn-submit"
         :disabled="!taskInput.trim() || isSubmitting"
         @click="handleSubmit"
       >
         {{ isSubmitting ? 'Submitting...' : 'Submit Task' }}
+      </button>
+
+      <button
+        class="btn btn-reset"
+        @click="handleReset"
+      >
+        Reset
       </button>
     </div>
   </div>
@@ -175,15 +174,10 @@ const dismissHelper = () => {
   color: var(--ctp-text);
 }
 
-.controls-row {
+.input-row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.task-input-row {
-  display: flex;
-  gap: 12px;
+  gap: 10px;
+  align-items: center;
 }
 
 .btn {

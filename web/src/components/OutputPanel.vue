@@ -38,11 +38,6 @@ const shortId = (id: string) => id.slice(0, 8)
 
 <template>
   <div class="output-panel">
-    <div class="panel-header">
-      <h3>Output</h3>
-      <span class="count">{{ filteredOutputs.length }} lines</span>
-    </div>
-
     <div ref="outputRef" class="panel-content">
       <div
         v-for="(line, idx) in filteredOutputs"
@@ -64,58 +59,40 @@ const shortId = (id: string) => id.slice(0, 8)
 
 <style scoped>
 .output-panel {
-  background: #11111b;
-  border: 1px solid #313244;
-  border-radius: 8px;
+  background: var(--ctp-crust);
   display: flex;
   flex-direction: column;
   height: 100%;
-  font-family: 'Monaco', 'Menlo', monospace;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #313244;
-  background: #1e1e2e;
-}
-
-.panel-header h3 {
-  margin: 0;
-  font-size: 0.95em;
-  color: #cdd6f4;
-  font-family: inherit;
-}
-
-.count {
-  color: #6c7086;
-  font-size: 0.8em;
+  min-height: 0;
+  overflow: hidden;
+  font-family: 'JetBrains Mono', 'Monaco', 'Menlo', monospace;
 }
 
 .panel-content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
-  font-size: 0.85em;
-  line-height: 1.5;
+  padding: 10px 12px;
+  font-size: 0.8em;
+  line-height: 1.6;
+  min-height: 0;
 }
 
 .output-line {
-  padding: 2px 8px;
-  color: #a6adc8;
+  padding: 3px 8px;
+  color: var(--ctp-subtext0);
   word-break: break-all;
+  border-radius: 3px;
 }
 
 .output-line.is-stderr {
-  color: #f38ba8;
-  background: rgba(243, 139, 168, 0.1);
+  color: var(--ctp-red);
+  background: rgba(243, 139, 168, 0.08);
 }
 
 .line-prefix {
-  color: #6c7086;
+  color: var(--ctp-overlay0);
   margin-right: 8px;
+  font-weight: 500;
 }
 
 .line-content {
@@ -124,7 +101,7 @@ const shortId = (id: string) => id.slice(0, 8)
 
 .empty-state {
   text-align: center;
-  color: #6c7086;
+  color: var(--ctp-overlay0);
   padding: 32px;
   font-style: italic;
 }

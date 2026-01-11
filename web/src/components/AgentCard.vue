@@ -116,19 +116,17 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 
 <style scoped>
 .agent-card {
-  background: var(--ctp-base);
+  background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
-  border-radius: 12px;
-  padding: 16px;
-  min-width: 280px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-  animation: fadeInUp 0.22s ease-out;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  animation: fadeInUp 0.2s ease-out;
 }
 
 .agent-card:hover {
-  transform: translateY(-2px);
   border-color: var(--ctp-surface1);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  background: var(--ctp-base);
 }
 
 /* Agent type accent borders */
@@ -144,21 +142,21 @@ const handleRestart = () => emit('restart', props.agent.agentId)
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--ctp-surface0);
 }
 
 .agent-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-/* Status dot styles - FIXED (no more Tailwind) */
+/* Status dot styles */
 .status-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   display: inline-block;
   flex-shrink: 0;
@@ -189,11 +187,12 @@ const handleRestart = () => emit('restart', props.agent.agentId)
   font-weight: 600;
   text-transform: capitalize;
   color: var(--ctp-text);
+  font-size: 0.9em;
 }
 
 .agent-id {
   color: var(--ctp-overlay0);
-  font-size: 0.85em;
+  font-size: 0.75em;
 }
 
 .mono {
@@ -202,7 +201,7 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 
 /* Sandbox status styles */
 .sandbox-status {
-  font-size: 0.8em;
+  font-size: 0.7em;
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -225,14 +224,14 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 }
 
 .card-body {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .stat-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 0.9em;
+  margin-bottom: 4px;
+  font-size: 0.8em;
 }
 
 .label {
@@ -241,6 +240,11 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 
 .value {
   color: var(--ctp-text);
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .value.specialization {
@@ -251,21 +255,22 @@ const handleRestart = () => emit('restart', props.agent.agentId)
 
 .card-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .btn {
   flex: 1;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   font-weight: 600;
+  font-size: 0.8em;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 .btn:disabled {
@@ -278,17 +283,9 @@ const handleRestart = () => emit('restart', props.agent.agentId)
   color: var(--ctp-crust);
 }
 
-.btn-kill:hover:not(:disabled) {
-  background: #f5a0b5;
-}
-
 .btn-restart {
   background: var(--ctp-green);
   color: var(--ctp-crust);
-}
-
-.btn-restart:hover:not(:disabled) {
-  background: #b8ebb3;
 }
 
 /* Animations */
